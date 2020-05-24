@@ -1,12 +1,26 @@
 // @ts-nocheck
 let ws;
 let chatUsersCtr = document.querySelector("#chatUsers");
+let chatUsersCount = document.querySelector("#chatUsersCount");
+let sendMessageForm = document.querySelector("#messageSendForm");
+let messageInput = document.querySelector("#messageInput");
+let chatMessagesCtr = document.querySelector("#chatMessages");
 
 window.addEventListener("DOMContentLoaded", () => {
   ws = new WebSocket(`ws://localhost:3000/ws`);
   ws.addEventListener("open", onConnectionOpen);
   ws.addEventListener("message", onMessageReceived);
 });
+
+sendMessageForm.onsubmit = (ev) => {
+  ev.preventDefault();
+  const event = {
+    event: "message",
+    data: messageInput.value,
+  };
+  ws.send(JSON.stringify(event));
+  messageInput.value = "";
+};
 
 function onConnectionOpen() {
   console.log("Connection opened");
@@ -24,10 +38,10 @@ function onConnectionOpen() {
 }
 
 function onMessageReceived(event) {
-  console.log("Message received");
   event = JSON.parse(event.data);
   switch (event.event) {
     case "users":
+      chatUsersCount.innerHTML = event.data.length;
       chatUsersCtr.innerHTML = "";
       event.data.forEach((u) => {
         const userEl = document.createElement("div");
@@ -35,7 +49,24 @@ function onMessageReceived(event) {
         userEl.innerHTML = u.name;
         chatUsersCtr.appendChild(userEl);
       });
+      break;
+    case "message":
+      appendMessage(event.data);
+      break;
+    case "previousMessages":
+      event.data.forEach(appendMessage);
+      break;
   }
+}
+
+function appendMessage(message) {
+  const messageEl = document.createElement("div");
+  messageEl.className = `message ${message.sender === "me" ? "to" : "from"} `;
+  messageEl.innerHTML = `
+        ${message.sender !== "me" ? "" : `<h4>${message.name}</h4>`}
+        <p class="message-text">${message.message}</p>
+      `;
+  chatMessagesCtr.appendChild(messageEl);
 }
 
 function getQueryParams() {
@@ -46,6 +77,5 @@ function getQueryParams() {
     const parts = pair.split("=");
     params[decodeURIComponent(parts[0])] = decodeURIComponent(parts[1]);
   }
-
   return params;
 }
