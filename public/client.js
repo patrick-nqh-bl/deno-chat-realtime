@@ -1,3 +1,4 @@
+// @ts-nocheck
 let ws;
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -10,12 +11,15 @@ function onConnectionOpen() {
   console.log("Connection opened");
   const queryParams = getQueryParams();
   console.log(queryParams);
+  if (!queryParams.name || !queryParams.group) {
+    window.location.href = "chat.html";
+  }
   const event = {
     event: "join",
     groupName: queryParams.group,
     name: queryParams.name,
   };
-  ws.send(event);
+  ws.send(JSON.stringify(event));
 }
 
 function onMessageReceived() {
