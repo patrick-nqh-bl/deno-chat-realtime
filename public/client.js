@@ -22,8 +22,10 @@ function onConnectionOpen() {
   ws.send(JSON.stringify(event));
 }
 
-function onMessageReceived() {
-  // Message received
+function onMessageReceived(event) {
+  console.log("Message received");
+  const data = JSON.parse(event.data);
+  console.log(data);
 }
 
 function getQueryParams() {
