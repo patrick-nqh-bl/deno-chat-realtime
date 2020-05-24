@@ -1,5 +1,6 @@
 // @ts-nocheck
 let ws;
+let chatUsersCtr = document.querySelector("#chatUsers");
 
 window.addEventListener("DOMContentLoaded", () => {
   ws = new WebSocket(`ws://localhost:3000/ws`);
@@ -24,8 +25,17 @@ function onConnectionOpen() {
 
 function onMessageReceived(event) {
   console.log("Message received");
-  const data = JSON.parse(event.data);
-  console.log(data);
+  event = JSON.parse(event.data);
+  switch (event.event) {
+    case "users":
+      chatUsersCtr.innerHTML = "";
+      event.data.forEach((u) => {
+        const userEl = document.createElement("div");
+        userEl.className = "chat-user";
+        userEl.innerHTML = u.name;
+        chatUsersCtr.appendChild(userEl);
+      });
+  }
 }
 
 function getQueryParams() {
