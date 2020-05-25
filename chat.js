@@ -9,7 +9,7 @@ import { isWebSocketCloseEvent } from "https://deno.land/std/ws/mod.ts";
 // }
 const usersMap = new Map();
 
-// groupName: [user1, user2]
+// groupsMap: [user1, user2]
 
 // {
 //   userId: string,
@@ -19,7 +19,7 @@ const usersMap = new Map();
 // }
 const groupsMap = new Map();
 
-// groupName: [message1, message2]
+// messagesMap: [message1, message2]
 
 // {
 //   userId: string,
@@ -36,13 +36,7 @@ export default async function chat(ws) {
     const event = typeof data === "string" ? JSON.parse(data) : data;
 
     if (isWebSocketCloseEvent(data)) {
-      const userObj = usersMap.get(userId);
-      let users = groupsMap.get(userObj.groupName) || [];
-      users = users.filter((u) => u.userId !== userId);
-      groupsMap.set(userObj.groupName, users);
-      usersMap.delete(userId);
-
-      emitUserList(userObj.groupName);
+      leaveGroup(userId);
       break;
     }
 
@@ -100,10 +94,13 @@ function getDisplayUsers(groupName) {
 function emitMessage(groupName, message, senderId) {
   const users = groupsMap.get(groupName) || [];
   for (const user of users) {
-    message.sender = user.userId === senderId ? "me" : senderId;
+    const tmpMessage = {
+      ...message,
+      sender: user.userId === senderId ? "me" : senderId,
+    };
     const event = {
       event: "message",
-      data: message,
+      data: tmpMessage,
     };
     user.ws.send(JSON.stringify(event));
   }
@@ -117,4 +114,14 @@ function emitPreviousMessages(groupName, ws) {
     data: messages,
   };
   ws.send(JSON.stringify(event));
+}
+
+function leaveGroup(userId) {
+  const userObj = usersMap.get(userId);
+  let users = groupsMap.get(userObj.groupName) || [];
+  users = users.filter((u) => u.userId !== userId);
+  groupsMap.set(userObj.groupName, users);
+  usersMap.delete(userId);
+
+  emitUserList(userObj.groupName);
 }
